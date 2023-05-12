@@ -42,9 +42,9 @@ def getFromJson(data,query)
 end
 
 def checkJsonStatus?(jsonFile,doc)
-  return TRUE if getFromJson(jsonFile, 'status.msg').match(/ok/i)
+  return true if getFromJson(jsonFile, 'status.msg').match(/ok/i)
   puts "something went wrong while requesting for Doc: #{doc}"
-  return FALSE
+  return false
 end
 
 def readFileToJson(file)
@@ -53,31 +53,31 @@ def readFileToJson(file)
 end
 
 def foundRightJson?(json, analysis)
-  return TRUE if getFromJson(json, 'data.Job.properties.Related Analysis.value') == analysis
-  return FALSE
+  return true if getFromJson(json, 'data.Job.properties.Related Analysis.value') == analysis
+  return false
 end
 
 def foundRightRelatedBiosample?(json, biosample)
-  return TRUE if getFromJson(json, "Related Biosample.value") == biosample
-  return FALSE
+  return true if getFromJson(json, "Related Biosample.value") == biosample
+  return false
 end
 
 def decompressBedgraphXZ(xzFile)
   if File.exist?(xzFile)
     `xz -d #{xzFile}`
-    return TRUE
+    return true
   else
     puts ""
     puts "Warning: The xz file: #{xzFile} does not exist!"
     puts ""
   end
-  return FALSE
+  return false
 end
 
 def fileExists?(path,filetype)
-  return TRUE if File.exist?(path)
+  return true if File.exist?(path)
   puts "#{filetype}: #{path} does not exist"
-  return FALSE
+  return false
 end
 
 def readSampleFile(sampleFile)
@@ -162,7 +162,7 @@ samples.each { |biosample, analysis|
     next
   end
   puts "#{bedgraphfile} was not found.  Need to find the ftp path."
-  jobFound = FALSE
+  jobFound = false
   getFromJson(allJobs,"data").each { |item|
     docName = getFromJson(item,"Job.value")
     jobfile = "#{tmpPath}/#{docName}.metadata.tsv"
@@ -172,13 +172,13 @@ samples.each { |biosample, analysis|
     next unless checkJsonStatus?( docJson,docName ) #make sure the docName was retrieved correctly
     next unless foundRightJson?( docJson,analysis )
     puts "Found the correct FTPjob for the analysis: #{docName} and downloaded the doc file: #{jobfile}"
-    jobFound = TRUE
+    jobFound = true
     getFromJson( docJson,"data.Job.properties.Related Biosamples.items").each { |relatedBiosample|
       next unless foundRightRelatedBiosample?(relatedBiosample,biosample)
       relatedResultFiles =  getFromJson(relatedBiosample,"Related Biosample.properties.Related Result Files.value")
       rfFile = "#{tmpPath}/#{relatedResultFiles}.metadata.tsv"
       puts "Found result file doc.. download doc: #{rfFile}"
-      curlAtlasApi("Result Files",relatedResultFiles,rfFile) unless File.exist?(rfFile)
+      curlAtlasApi(URI.escape("Result Files"),relatedResultFiles,rfFile) unless File.exist?(rfFile)
       rfJson = readFileToJson(rfFile)
       next unless checkJsonStatus?(rfJson, relatedResultFiles) #make sure the result files doc was retrieved correctly
       getFromJson(rfJson,"data.Result Files.properties.Biosample ID.properties.Pipeline Result Files.items").each { |file|
